@@ -1,4 +1,4 @@
-from relations import weakRelation,campRelation
+from .relations import weakRelation,campRelation
 
 # 指令卡伤害倍率
 card_rate = [{'b':1.5,'a':1.0,'q':0.8},
@@ -21,15 +21,15 @@ class_adjustment = {'saber':1,
 
 
 # 计算单张卡牌伤害
-def cardDamage(card,pos,enemy,crit = False, init_red=False):
+def cardDamage(servant,card,pos,enemy,crit = False, init_red=False):
     
     global card_rate
     global class_adjustment
 
-    servant = list(card.values())[0]
-    card_type = list(card.keys())[0]
+    card_type = card.type
 
-    rate = card_rate[pos][card_type[0]]
+    rate = card_rate[pos][card_type]
+    
     buffs = servant.getBuff()
 
     weak = weakRelation(servant.role,enemy.role)

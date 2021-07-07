@@ -17,6 +17,48 @@ star_rate={'saber':100,
            'foreigner':150
 }
 
+class Card():
+
+    def __init__(self,name:str,owner:str,type:str,star_rate):
+
+        '''
+        抽象卡片这个实体，为了应对色卡集星和方便统计
+
+        '''
+
+        self.name = name
+
+        self.owner = owner
+        
+        self.type = type
+        
+        self.star_rate = star_rate
+
+        #本身色卡具有的buff
+        self.buff = {'a':1,'b':1,'c':1}
+
+
+    def __repr__(self):
+
+        return self.owner+self.name
+
+    def _addStarrate(self,rate):
+
+        self.star_rate*= rate
+
+    def _setStarrate(self,rate):
+
+        self.star_rate = rate
+
+    def _setBuff(self,buff):
+
+        self.buff = buff
+
+
+
+
+
+
 class Servant():
 
     def __init__(self,name:str,role:str,camp:int,cards:list,atk:int):
@@ -43,7 +85,7 @@ class Servant():
 
         self.name = name
         self.role = role 
-        self.cards = cards
+
         self.camp = camp
         self.atk = atk
 
@@ -54,6 +96,9 @@ class Servant():
         # 随机生成一个从者的暴击星集中率
         self.star_rate = star_rate[role]*np.random.uniform(0.97,1.04)
 
+        # 生成角色的卡组
+        self.cards = [Card(c,self.name,c[0],self.star_rate) for c in cards]
+
     def __repr__(self):
 
         return self.name
@@ -62,9 +107,29 @@ class Servant():
 
         self.atk = atk
 
-    def _setStarRate(self,rate):
+    def _setStarRate(self,rate,card_type = None):
+
+        if card_type:
+
+            self._addCardStarRate(rate,card_type)
+
+        else:
+
+            self.star_rate *= rate
+            self._sync()
+
         
-        self.star_rate*=rate
+    
+    
+    def _addCardStarRate(self,rate,card_type):
+
+        for c in self.cards:
+
+            if c.type == card_type:
+
+                c._addStarrate(rate)
+
+
 
     def getBuff(self):
 
@@ -81,11 +146,26 @@ class Servant():
         if buff_type == 'a':
         
             assert type(buff)==dict,'请检查buff内容'
+
             self.buff['a'] = dict(Counter(self.buff['a'])+Counter(buff))
+
+            self._sync()
         
         else:
         
             self.buff[buff_type]+=buff
+            
+            self._sync()
+        
+
+    def _sync(self):
+
+        buffs = self.getBuff()
+
+        for c in self.cards:
+
+            c._setBuff({'a':buffs['a'][c.type],'b':buffs['b'],'c':buffs['c']})
+            c._setStarrate(self.star_rate)
 
 # 敌人模板
 class Enemy():

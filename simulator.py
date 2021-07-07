@@ -16,11 +16,16 @@ class Simulator():
         self.enemies = enemies
         self.stars  = stars
         self.gen = gen
-        self.cards = [{c:s} for s in self.servants for c in s.getCards()]
+        self.cardMap = {c:s for s in self.servants for c in s.getCards()}
+        self.cards = list(self.cardMap.keys())
+        self.seed = seed
+
 
     # 发牌
     def _shuffle(self,idx):
 
+        seed(int(next(self.gen)*100))
+        
         shuffle(self.cards)
         
         turns = [self.cards[0:5],self.cards[5:10],self.cards[10::]]  
@@ -32,8 +37,7 @@ class Simulator():
 
         global rand_weight
         
-        # 暂时不考虑特定色卡集星
-        init_weight = [list(servant.values())[0].star_rate for servant in cards]
+        init_weight = [ c.star_rate for c in cards]
         
         init_star = self.stars
         
@@ -45,33 +49,33 @@ class Simulator():
         return rands<=stars/10    
 
 
-
     # 出牌,反馈是否击杀
     def showHand(self,func,cards):
 
         rands = itertools.islice(self.gen,5)
         
-        turn = self._shuffle(0)
-        stars = self._allocateStars(turn)
+        stars = self._allocateStars(cards)
         
-        crits = self._crits(stars,rands)
+        crits = self._crits(stars,np.array(list(rands)))
 
         # 经过func选出要打出的三张卡
 
-        cards = func(cards,stars)
+        cards = func(tuple(cards),stars)
         
-        init_red = list(cards[0].keys())[0].startswith('b')
+        init_red = cards[0].type == 'b'
 
         total = 0
 
         for idx,card in enumerate(cards):
 
             # 随机数种子
-            r = (next(self.gen)/5-0.1)+1
+            r = (round(next(self.gen)/5-0.1,2))+1
+           
+            # print(card,'暴击?:',crits[idx],'种子:',r,cardDamage(self.cardMap[card],card,idx,self.enemies[0],crits[idx],init_red)*r)
 
-            total+=cardDamage(card,idx,self.enemies[0],crits[idx],init_red)*r
+            total+=cardDamage(self.cardMap[card],card,idx,self.enemies[0],crits[idx],init_red)*r
 
-        return total>=self.enemies[0].hp
+        return total>=self.enemies[0].hp,cards
 
 
 
